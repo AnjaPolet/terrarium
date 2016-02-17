@@ -1,19 +1,13 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
+
 package terrarium;
 
-/**
- *
- * @author Anja
- */
+
+
 public class Herbivoor extends Organisme {
     
-    public Herbivoor(){
-        levenskracht = 0;
-        
+    public Herbivoor(int rij,int kolom){
+        super(rij,kolom);
     }
     @Override
     public String toString() {
@@ -23,12 +17,16 @@ public class Herbivoor extends Organisme {
     public void actie(Organisme organisme){
         if (organisme instanceof Plant){
             this.levenskracht++;
-            organisme.setLevenskracht(-1);
+            Matrix.getInstance().verwijderDodeOrganisme(organisme.getCoordinaat());
+            
         }    
         else if (organisme instanceof Herbivoor){
+            if(Matrix.getInstance().getVrijePlaatsen()>0)
             Matrix.getInstance().addOrganisme(Type.HERBIVOOR);
         }
         actionPerformed = true;
     }
+
+    
 
 }

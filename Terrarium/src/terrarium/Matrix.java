@@ -1,18 +1,26 @@
 package terrarium;
 
-import java.util.Random;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Matrix {
 
-    private static Matrix uniqueInstance = new Matrix();
+    private static Matrix uniqueInstance = new Matrix();  // TODO enkele finals
     private static final int FORMAT = 6;
     private OrganismeFactory factory;
-    private Organisme[][] terrarium;
+    private char[][] terrarium;
+    private Map<Coordinaat, Organisme> map ;
+    private int vrijePlaatsen;
     //int dag; lijkt niet zinvol om bij te houden
 
     private Matrix() {
-        terrarium = new Organisme[FORMAT][FORMAT];
+        terrarium = new char[FORMAT][FORMAT];
+        map = new ConcurrentHashMap<>();
         factory = new OrganismeFactory();
+        vrijePlaatsen = (FORMAT*FORMAT);
+        
+
         voegToe((int) (Math.random() * 5) + 5);
         display();
     }
@@ -21,11 +29,18 @@ public class Matrix {
         return uniqueInstance;
     }
 
+    public Map<Coordinaat, Organisme> getMap() {
+        return map;
+    }
+
+    public void setMap(Map<Coordinaat, Organisme> map) {
+        this.map = map;
+    }
+    
+
     private void voegToe(int aantal) {
         for (int i = 0; i < aantal; i++) {
-            int kolom = (int) (Math.random() * FORMAT);
-            int rij = (int) (Math.random() * FORMAT);
-            int soort = (int) (Math.random() * 3);
+            int soort = (int) (Math.random() * 3);  // TODO kijk eens naar de class Random
             Type type = null;
             switch (soort) {
                 case 0:
@@ -39,145 +54,91 @@ public class Matrix {
                     break;
 
             }
-            if (terrarium[rij][kolom] == null) {
-                terrarium[rij][kolom] = factory.createOrganisme(type);
-            }
+            addOrganisme(type);
         }
     }
 
-    public void display() {
-        for (int i = 0; i < FORMAT; i++) {
-            System.out.println();
-            for (int y = 0; y < FORMAT; y++) {
-                if (terrarium[i][y] != null) {
-                    System.out.print(terrarium[i][y]);
-                } else {
-                    System.out.print(".");
-                }
-            }
+    public int getVrijePlaatsen() {
+        return vrijePlaatsen;
+    }
 
+    public void setVrijePlaatsen(int vrijePlaatsen) {
+        this.vrijePlaatsen = vrijePlaatsen;
+    }
+
+    public void display() {  // TODO naar main verhuizen
+        for (int i = 0; i < FORMAT; i++) {
+            for (int j = 0; j < FORMAT; j++) {
+                terrarium[i][j] = '.';
+            }
         }
+        for(Organisme o : map.values()){
+            terrarium[o.getCoordinaat().getRij()][o.getCoordinaat().getKolom()]=o.toString().charAt(0);
+        }
+        
+        for(int rij = 0;rij<FORMAT;rij++){
+            System.out.println();
+        
+            for (int kolom = 0;kolom<FORMAT;kolom++){
+                System.out.print(" "+terrarium[rij][kolom]+" ");
+            }
+                
+                }
     }
 
     public void addOrganisme(Type type) {
-        Organisme organisme = factory.createOrganisme(type);
+
         int rij = (int) (Math.random() * FORMAT);
         int kolom = (int) (Math.random() * FORMAT);
-        while (terrarium[rij][kolom] != null) {
+
+        while (map.containsKey(new Coordinaat(rij, kolom))) {
             rij = (int) (Math.random() * FORMAT);
             kolom = (int) (Math.random() * FORMAT);
-
         }
-        terrarium[rij][kolom] = organisme;
+        Organisme organisme = factory.createOrganisme(type, rij, kolom);
+        map.put(organisme.getCoordinaat(), organisme);
+        vrijePlaatsen--;
 
     }
 
-    public void verwijderDodeOrganisme() {
-        for (int i = 0; i < FORMAT; i++) {
-            for (int y = 0; y < FORMAT; y++) {
-                if ( terrarium[i][y] != null) {
-                    if (terrarium[i][y].getLevenskracht() < 0)
-                        terrarium[i][y] = null;
-                }
-            }
-        }
-    }
-
-    public boolean[] plaatsenVrijRondom(int rij, int kolom) {
-        boolean[] vrij = new boolean[4];
-        //boven
-        if (rij != 0 && terrarium[rij - 1][kolom] == null) {
-            vrij[0] = true;
-        }
-        //onder
-        if (rij < FORMAT - 1 && terrarium[rij + 1][kolom] == null) {
-            vrij[1] = true;
-        }
-        //links
-        if (kolom != 0 && terrarium[rij][kolom - 1] == null) {
-            vrij[2] = true;
-        }
-        //rechts
-        if (kolom < FORMAT - 1 && terrarium[rij][kolom + 1] == null) {
-            vrij[3] = true;
-        }
-        return vrij;
-    }
-
-    public void beweegRandom(int rij, int kolom) {
-        int beweging = (int) (Math.random() * 4);
-        boolean[] vrijePlaatsen = plaatsenVrijRondom(rij, kolom);
-        boolean kanBewegen=false;
-        for (boolean b : vrijePlaatsen)
-            if(b)
-                kanBewegen=true;
-        if(kanBewegen){
-        while (!vrijePlaatsen[beweging]) {
-            beweging = (int) (Math.random() * 4);
-        }
-        switch(beweging){
-            case 0:
-                terrarium[rij - 1][kolom]=terrarium[rij][kolom];
-                terrarium[rij][kolom]=null;
-                break;
-            case 1:
-                terrarium[rij + 1][kolom]=terrarium[rij][kolom];
-                terrarium[rij][kolom]=null;
-                break;
-            case 2:
-                terrarium[rij][kolom - 1]=terrarium[rij][kolom];
-                terrarium[rij][kolom]=null;
-                break;
-            case 3:
-                terrarium[rij][kolom + 1]=terrarium[rij][kolom];
-                terrarium[rij][kolom]=null;
-                break;
-                
-                
-        }
-        }
-
+    public void verwijderDodeOrganisme(Coordinaat c) {
+        
+                map.remove(c);
+                vrijePlaatsen++;
+  
     }
 
     public void volgendeDag() {
-        
-        for (int i = 0; i < FORMAT; i++) {
-            for (int y = 0; y < FORMAT - 1; y++) {
-                if (terrarium[i][y] != null && terrarium[i][y + 1] != null) {
-                    terrarium[i][y].actie(terrarium[i][y + 1]);
-                    
-                    
-                } 
-                
-            }        
-        }        
-        for (int x = 0; x < FORMAT; x++) {
-            for (int z = 0; z < FORMAT ; z++) {
-                if (terrarium[x][z] != null && !(terrarium[x][z]instanceof Plant)){
-                    if (!terrarium[x][z].isActionPerformed())
-                        beweegRandom(x, z);
-                    else terrarium[x][z].setActionPerformed(false);
-                        }
-                
-                        
-                    
-                
+        Iterator it = map.entrySet().iterator();
+        while (it.hasNext()){
+            Map.Entry pair = (Map.Entry)it.next();
+            Coordinaat key = (Coordinaat)pair.getKey();
+            Organisme value = (Organisme) pair.getValue();
+            Coordinaat testKey = new Coordinaat(key.getRij(), key.getKolom() + 1);
+            if (map.containsKey(testKey)) {
+                value.actie(map.get(testKey));
             }
-        }
             
+        }
+        Iterator ite = map.entrySet().iterator();  
+        while (ite.hasNext()){
+            Map.Entry pair = (Map.Entry)ite.next();
+            Coordinaat key = (Coordinaat)pair.getKey();
+            map.get(key).beweegRandom();
         
         
+        }
 
         int aantalNieuwePlanten = (int) (Math.random() * 3);
         for (int i = 0;
                 i < aantalNieuwePlanten;
                 i++) {
+            if(vrijePlaatsen>0)
             addOrganisme(Type.PLANT);
         }
 
-        verwijderDodeOrganisme();
-
         display();
-    }
+        
 
+    }
 }
