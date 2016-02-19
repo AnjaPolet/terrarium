@@ -4,14 +4,24 @@ package terrarium;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 
 
 public abstract class Organisme {
     protected int levenskracht;
+    protected Random randomGetal = new Random();
+    protected boolean actionPerformed =false;
+    protected boolean moved = false;
 
-    
+    public boolean isMoved() {
+        return moved;
+    }
+
+    public void setMoved(boolean moved) {
+        this.moved = moved;
+    }
     protected Coordinaat coordinaat;
     
     public Organisme(int rij,int kolom){
@@ -29,10 +39,8 @@ public abstract class Organisme {
 
    
     
-    //protected int rij;
-    //protected int kolom;
-    //+getters en setters + in subklassen initialiseren in de constructor (met check of plaats in array reeds bezet)
-    protected boolean actionPerformed =false;
+    
+    
 
     public boolean isActionPerformed() {
         return actionPerformed;
@@ -52,7 +60,7 @@ public abstract class Organisme {
     public abstract void actie(Organisme organisme);
     
     public void beweegRandom(){
-        if(!actionPerformed){
+        if(!actionPerformed && !moved){
             Set<Coordinaat> ingenomenCoordinaten = Matrix.getInstance().getMap().keySet();
             List <Coordinaat> rondom = new ArrayList();
             
@@ -61,20 +69,21 @@ public abstract class Organisme {
             Coordinaat onder=new Coordinaat(coordinaat.getRij()+1,coordinaat.getKolom());
             Coordinaat boven=new Coordinaat(coordinaat.getRij()-1,coordinaat.getKolom());
             
-            if ((!ingenomenCoordinaten.contains(rechts))&&(rechts.getKolom()<6))
+            if ((!ingenomenCoordinaten.contains(rechts))&&(rechts.getKolom()<Matrix.getFORMAT()))
                 rondom.add(rechts);
             if ((!ingenomenCoordinaten.contains(links))&&(links.getKolom()>=0))
                 rondom.add(links);
-            if ((!ingenomenCoordinaten.contains(onder))&&(onder.getRij()<6))
+            if ((!ingenomenCoordinaten.contains(onder))&&(onder.getRij()<Matrix.getFORMAT()))
                 rondom.add(onder);
             if ((!ingenomenCoordinaten.contains(boven))&&(boven.getRij()>=0))
                 rondom.add(boven);
             
          if(rondom.size()>0){
-            int nieuwePlaats = (int) (Math.random()*rondom.size());
+            int nieuwePlaats = randomGetal.nextInt(rondom.size());
             Matrix.getInstance().getMap().remove(coordinaat);
             this.coordinaat=rondom.get(nieuwePlaats);
             Matrix.getInstance().getMap().put(coordinaat, this);
+            moved=true;
          }
          
         }

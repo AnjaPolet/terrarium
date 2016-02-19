@@ -1,17 +1,10 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package terrarium;
 
-/**
- *
- * @author Anja
- */
+
 public class Coordinaat {
-    private int rij;  // TODO final
-    private int kolom;  // TODO final
+    private final int rij;  
+    private final int kolom; 
     public Coordinaat(int rij, int kolom){
         this.rij=rij;
         this.kolom=kolom;
@@ -27,23 +20,22 @@ public class Coordinaat {
 
     @Override
     public boolean equals(Object obj) {
+        if (obj instanceof Coordinaat){
         Coordinaat c = (Coordinaat)obj;
         return this.rij==c.getRij()&&this.kolom == c.getKolom();
+        }
+        else return false;
     }
 
     public int getRij() {
         return rij;
     }
 
-    public void setRij(int rij) {
-        this.rij = rij;
-    }
+    
 
     public int getKolom() {
         return kolom;
     }
 
-    public void setKolom(int kolom) {
-        this.kolom = kolom;
-    }
+    
 }

@@ -2,46 +2,52 @@ package terrarium;
 
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Matrix {
+public final class Matrix {
 
-    private static Matrix uniqueInstance = new Matrix();  // TODO enkele finals
-    private static final int FORMAT = 6;
-    private OrganismeFactory factory;
-    private char[][] terrarium;
-    private Map<Coordinaat, Organisme> map ;
+    private static final Matrix UNIQUE_INSTANCE = new Matrix();  
+    private static final int FORMAT = 10;
+    private final OrganismeFactory factory;
+    
+    private final Map<Coordinaat, Organisme> map ;  
     private int vrijePlaatsen;
-    //int dag; lijkt niet zinvol om bij te houden
+    private final Random randomGetal = new Random(); 
+
+    public static int getFORMAT() {
+        return FORMAT;
+    }
+    
 
     private Matrix() {
-        terrarium = new char[FORMAT][FORMAT];
+        
         map = new ConcurrentHashMap<>();
-        factory = new OrganismeFactory();
+        factory = OrganismeFactory.getInstance();
         vrijePlaatsen = (FORMAT*FORMAT);
         
-
-        voegToe((int) (Math.random() * 5) + 5);
+        
+        voegToe(randomGetal.nextInt(10) + 10);
         display();
     }
 
     public static Matrix getInstance() {
-        return uniqueInstance;
+        return UNIQUE_INSTANCE;
     }
 
     public Map<Coordinaat, Organisme> getMap() {
         return map;
     }
 
-    public void setMap(Map<Coordinaat, Organisme> map) {
-        this.map = map;
-    }
+
     
 
     private void voegToe(int aantal) {
         for (int i = 0; i < aantal; i++) {
-            int soort = (int) (Math.random() * 3);  // TODO kijk eens naar de class Random
-            Type type = null;
+            int soort = randomGetal.nextInt(4);  
+            //findbugs: geen default in switch, maar kan eigenlijk niet voorkomen => toevoegen of niet?
+            Type type;
             switch (soort) {
                 case 0:
                     type = Type.PLANT;
@@ -52,6 +58,11 @@ public class Matrix {
                 case 2:
                     type = Type.HERBIVOOR;
                     break;
+                case 3:
+                    type = Type.MENS;
+                    break;
+                default:
+                    type = Type.PLANT;
 
             }
             addOrganisme(type);
@@ -62,11 +73,12 @@ public class Matrix {
         return vrijePlaatsen;
     }
 
-    public void setVrijePlaatsen(int vrijePlaatsen) {
-        this.vrijePlaatsen = vrijePlaatsen;
-    }
 
-    public void display() {  // TODO naar main verhuizen
+//findbugs: may expose internal representation by returning reference to mutable object => stelt voor kopie door te geven
+    // gezien we de array elke keer opnieuw genereren (de info zit eigenlijk in de map), moeten we daar rekening mee houden?
+    // in theorie kunnen we de array ook hier initialiseren ipv er een klassevariabele van te maken => altijd de voorkeur. 
+    public char [][] display() { 
+        char[][] terrarium= new char[FORMAT][FORMAT];
         for (int i = 0; i < FORMAT; i++) {
             for (int j = 0; j < FORMAT; j++) {
                 terrarium[i][j] = '.';
@@ -75,25 +87,18 @@ public class Matrix {
         for(Organisme o : map.values()){
             terrarium[o.getCoordinaat().getRij()][o.getCoordinaat().getKolom()]=o.toString().charAt(0);
         }
-        
-        for(int rij = 0;rij<FORMAT;rij++){
-            System.out.println();
-        
-            for (int kolom = 0;kolom<FORMAT;kolom++){
-                System.out.print(" "+terrarium[rij][kolom]+" ");
-            }
-                
-                }
+        return terrarium;
+       
     }
 
     public void addOrganisme(Type type) {
 
-        int rij = (int) (Math.random() * FORMAT);
-        int kolom = (int) (Math.random() * FORMAT);
+        int rij = randomGetal.nextInt(FORMAT);
+        int kolom = randomGetal.nextInt(FORMAT);
 
         while (map.containsKey(new Coordinaat(rij, kolom))) {
-            rij = (int) (Math.random() * FORMAT);
-            kolom = (int) (Math.random() * FORMAT);
+            rij = randomGetal.nextInt(FORMAT);
+            kolom = randomGetal.nextInt(FORMAT);
         }
         Organisme organisme = factory.createOrganisme(type, rij, kolom);
         map.put(organisme.getCoordinaat(), organisme);
@@ -109,35 +114,34 @@ public class Matrix {
     }
 
     public void volgendeDag() {
-        Iterator it = map.entrySet().iterator();
-        while (it.hasNext()){
-            Map.Entry pair = (Map.Entry)it.next();
-            Coordinaat key = (Coordinaat)pair.getKey();
-            Organisme value = (Organisme) pair.getValue();
-            Coordinaat testKey = new Coordinaat(key.getRij(), key.getKolom() + 1);
-            if (map.containsKey(testKey)) {
-                value.actie(map.get(testKey));
-            }
-            
-        }
-        Iterator ite = map.entrySet().iterator();  
-        while (ite.hasNext()){
-            Map.Entry pair = (Map.Entry)ite.next();
-            Coordinaat key = (Coordinaat)pair.getKey();
-            map.get(key).beweegRandom();
         
         
-        }
+        for (Entry<Coordinaat,Organisme> pair : map.entrySet()) {
 
-        int aantalNieuwePlanten = (int) (Math.random() * 3);
+            Coordinaat testKey = new Coordinaat(pair.getKey().getRij(), pair.getKey().getKolom() + 1);
+            if (map.containsKey(testKey)) {
+                pair.getValue().actie(map.get(testKey));
+            }
+        }
+        //beweging indien geen actie gedaan
+        for (Coordinaat c : map.keySet()) {
+            map.get(c).beweegRandom();
+        }
+        
+        //random aantal nieuwe planten toevoegen
+
+        int aantalNieuwePlanten = randomGetal.nextInt(2)+1;
         for (int i = 0;
                 i < aantalNieuwePlanten;
                 i++) {
             if(vrijePlaatsen>0)
             addOrganisme(Type.PLANT);
         }
+        for (Organisme o : map.values()){
+            o.setMoved(false);
+        }
 
-        display();
+       
         
 
     }
